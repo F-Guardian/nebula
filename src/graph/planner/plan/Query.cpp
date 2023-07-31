@@ -77,6 +77,7 @@ void GetNeighbors::cloneMembers(const GetNeighbors& g) {
   setEdgeTypes(g.edgeTypes_);
   setEdgeDirection(g.edgeDirection_);
   setRandom(g.random_);
+  setIsPush(g.isPush_);
   if (g.vertexProps_) {
     auto vertexProps = *g.vertexProps_;
     auto vertexPropsPtr = std::make_unique<decltype(vertexProps)>(vertexProps);
@@ -360,6 +361,45 @@ void Project::cloneMembers(const Project& p) {
   }
 }
 
+Procedure::Procedure(QueryContext* qctx, PlanNode* input, YieldColumns* cols)
+    : SingleInputNode(qctx, Kind::kProcedure, input), cols_(cols) {
+  if (cols_ != nullptr) {
+    setColNames(cols_->names());
+  }
+}
+
+std::unique_ptr<PlanNodeDescription> Procedure::explain() const {
+  auto desc = SingleInputNode::explain();
+  auto columns = folly::dynamic::array();
+  if (cols_) {
+    for (const auto* col : cols_->columns()) {
+      DCHECK(col != nullptr);
+      columns.push_back(col->toString());
+    }
+  }
+  addDescription("columns", folly::toJson(columns), desc.get());
+  return desc;
+}
+
+void Procedure::accept(PlanNodeVisitor* visitor) {
+  visitor->visit(this);
+}
+
+PlanNode* Procedure::clone() const {
+  auto* newProj = Procedure::make(qctx_, nullptr);
+  newProj->cloneMembers(*this);
+  return newProj;
+}
+
+void Procedure::cloneMembers(const Procedure& p) {
+  SingleInputNode::cloneMembers(p);
+
+  cols_ = qctx_->objPool()->makeAndAdd<YieldColumns>();
+  for (const auto& col : p.columns()->columns()) {
+    cols_->addColumn(col->clone().release());
+  }
+}
+
 std::unique_ptr<PlanNodeDescription> Unwind::explain() const {
   auto desc = SingleInputNode::explain();
   addDescription("alias", alias(), desc.get());
@@ -484,6 +524,7 @@ void Sample::cloneMembers(const Sample& l) {
   SingleInputNode::cloneMembers(l);
 
   count_ = l.count_->clone();
+  flat_sample = l.flat_sample;
 }
 
 std::unique_ptr<PlanNodeDescription> Aggregate::explain() const {

@@ -204,6 +204,10 @@ class GetNeighbors : public Explore {
     return random_;
   }
 
+  bool isPush() const {
+    return isPush_;
+  }
+
   void setSrc(Expression* src) {
     src_ = src;
   }
@@ -236,6 +240,10 @@ class GetNeighbors : public Explore {
     random_ = random;
   }
 
+  void setIsPush(bool push = false) {
+    isPush_ = push;
+  }
+
   PlanNode* clone() const override;
   std::unique_ptr<PlanNodeDescription> explain() const override;
 
@@ -257,6 +265,7 @@ class GetNeighbors : public Explore {
   std::unique_ptr<std::vector<StatProp>> statProps_;
   std::unique_ptr<std::vector<Expr>> exprs_;
   bool random_{false};
+  bool isPush_{false};
 };
 
 // Get property with given vertex keys.
@@ -823,6 +832,32 @@ class Project final : public SingleInputNode {
   YieldColumns* cols_{nullptr};
 };
 
+// Procedure is used to process call apoc procedure.
+class Procedure final : public SingleInputNode {
+ public:
+  static Procedure* make(QueryContext* qctx, PlanNode* input, YieldColumns* cols = nullptr) {
+    return qctx->objPool()->makeAndAdd<Procedure>(qctx, input, cols);
+  }
+
+  const YieldColumns* columns() const {
+    return cols_;
+  }
+
+  PlanNode* clone() const override;
+  std::unique_ptr<PlanNodeDescription> explain() const override;
+
+  void accept(PlanNodeVisitor* visitor) override;
+
+ private:
+  friend ObjectPool;
+  Procedure(QueryContext* qctx, PlanNode* input, YieldColumns* cols);
+
+  void cloneMembers(const Procedure&);
+
+ private:
+  YieldColumns* cols_{nullptr};
+};
+
 // Thansforms a list to column.
 class Unwind final : public SingleInputNode {
  public:
@@ -1057,6 +1092,9 @@ class Sample final : public SingleInputNode {
     count_ = DCHECK_NOTNULL(count);
   }
 
+  void setFlatSample(bool flatSample) { flat_sample = flatSample; }
+  bool flatSample() { return flat_sample; }
+
   PlanNode* clone() const override;
   std::unique_ptr<PlanNodeDescription> explain() const override;
 
@@ -1073,6 +1111,7 @@ class Sample final : public SingleInputNode {
 
  private:
   Expression* count_{nullptr};
+  bool flat_sample{false};
 };
 
 // Do Aggregation with the given set of records,

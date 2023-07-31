@@ -94,6 +94,7 @@ LABEL_FULL_WIDTH            {CN_EN_FULL_WIDTH}{CN_EN_NUM_FULL_WIDTH}*
 "FROM"                      { return TokenType::KW_FROM; }
 "WHERE"                     { return TokenType::KW_WHERE; }
 "MATCH"                     { return TokenType::KW_MATCH; }
+"CALL"                      { return TokenType::KW_CALL; }
 "ISOMOR"                    { return TokenType::KW_ISOMOR; } 
 "INSERT"                    { return TokenType::KW_INSERT; } 
 "YIELD"                     { return TokenType::KW_YIELD; } 
@@ -298,6 +299,7 @@ LABEL_FULL_WIDTH            {CN_EN_FULL_WIDTH}{CN_EN_NUM_FULL_WIDTH}*
 "SESSIONS"                  { return TokenType::KW_SESSIONS; }
 "SESSION"                   { return TokenType::KW_SESSION; }
 "SAMPLE"                    { return TokenType::KW_SAMPLE; }
+"FLATSAMPLE"                { return TokenType::KW_FLAT_SAMPLE; }
 "QUERIES"                   { return TokenType::KW_QUERIES; }
 "QUERY"                     { return TokenType::KW_QUERY; }
 "KILL"                      { return TokenType::KW_KILL; }

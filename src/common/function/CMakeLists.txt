@@ -6,6 +6,9 @@ nebula_add_library(
     function_manager_obj OBJECT
     FunctionManager.cpp
     ../geo/GeoFunction.cpp
+    FunctionUdfManager.cpp
+    FunctionApocManager.cpp
+    GraphFunction.h
 )
 
 nebula_add_library(

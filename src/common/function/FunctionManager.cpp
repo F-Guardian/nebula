@@ -17,6 +17,7 @@
 #include "common/datatypes/Set.h"
 #include "common/datatypes/Vertex.h"
 #include "common/expression/Expression.h"
+#include "common/function/FunctionApocManager.h"
 #include "common/geo/GeoFunction.h"
 #include "common/geo/io/wkb/WKBReader.h"
 #include "common/geo/io/wkb/WKBWriter.h"
@@ -25,12 +26,24 @@
 #include "common/thrift/ThriftTypes.h"
 #include "common/time/TimeUtils.h"
 #include "common/time/WallClock.h"
+#include "graph/service/GraphFlags.h"
+#include "FunctionUdfManager.h"
+#include "FunctionApocManager.h"
+
+DEFINE_bool(enable_udf, true, "enable udf");
+DEFINE_bool(enable_apoc, true, "enable apoc");
 
 namespace nebula {
 
 // static
 FunctionManager &FunctionManager::instance() {
   static FunctionManager instance;
+  if (FLAGS_enable_udf) {
+    static FunctionUdfManager udfManager;
+  }
+  if (FLAGS_enable_apoc) {
+    static FunctionApocManager apocManager;
+  }
   return instance;
 }
 
@@ -430,6 +443,19 @@ StatusOr<Value::Type> FunctionManager::getReturnType(const std::string &funcName
   }
   auto iter = typeSignature_.find(func);
   if (iter == typeSignature_.end()) {
+    StatusOr<Value::Type> result = Status::Error();
+    if (FLAGS_enable_udf) {
+      result = FunctionUdfManager::getUdfReturnType(funcName, argsType);
+    }
+    if (result.ok()) {
+      return result;
+    }
+    if (FLAGS_enable_apoc) {
+      result = FunctionApocManager::getApocReturnType(funcName, argsType);
+    }
+    if (result.ok()) {
+      return result;
+    }
     return Status::Error("Function `%s' not defined", funcName.c_str());
   }
 
@@ -2760,6 +2786,19 @@ Status FunctionManager::find(const std::string &func, const size_t arity) {
   std::transform(func.begin(), func.end(), func.begin(), ::tolower);
   auto iter = functions_.find(func);
   if (iter == functions_.end()) {
+    StatusOr<const FunctionManager::FunctionAttributes> result = Status::Error();
+    if (FLAGS_enable_udf) {
+      result = FunctionUdfManager::loadUdfFunction(func, arity);
+    }
+    if (result.ok()) {
+      return result;
+    }
+    if (FLAGS_enable_apoc) {
+      result = FunctionApocManager::loadApocFunction(func, arity);
+    }
+    if (result.ok()) {
+      return result;
+    }
     return Status::Error("Function `%s' not defined", func.c_str());
   }
   // check arity
